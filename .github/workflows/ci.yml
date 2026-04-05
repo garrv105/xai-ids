@@ -32,7 +32,7 @@ jobs:
         run: ruff check xai_ids/ tests/ scripts/
 
       - name: Run black (check mode)
-        run: black --check xai_ids/ tests/ scripts/
+        run: black --check --line-length 120 xai_ids/ tests/ scripts/
 
       - name: Run isort (check mode)
         run: isort --check-only xai_ids/ tests/ scripts/

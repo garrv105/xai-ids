@@ -45,9 +45,7 @@ JWT_ALGORITHM = "HS256"
 JWT_TTL_MINUTES: int = int(os.getenv("XAI_IDS_JWT_TTL_MIN", "60"))
 
 _raw_api_keys: str = os.getenv("XAI_IDS_API_KEYS", "")
-VALID_API_KEYS: set[str] = {
-    k.strip() for k in _raw_api_keys.split(",") if k.strip()
-}
+VALID_API_KEYS: set[str] = {k.strip() for k in _raw_api_keys.split(",") if k.strip()}
 
 ADMIN_USERNAME: str = os.getenv("XAI_IDS_ADMIN_USER", "admin")
 _DEFAULT_HASH = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4oHXyZ8QBK"
@@ -208,9 +206,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm) -> TokenR
     Validates username/password and returns a JWT access token.
     Plugged into POST /auth/token by server.py.
     """
-    if form_data.username != ADMIN_USERNAME or not verify_password(
-        form_data.password, ADMIN_PASS_HASH
-    ):
+    if form_data.username != ADMIN_USERNAME or not verify_password(form_data.password, ADMIN_PASS_HASH):
         _pwd_ctx.dummy_verify()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

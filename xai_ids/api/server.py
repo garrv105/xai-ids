@@ -21,16 +21,15 @@ Security hardening:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List
 
 import numpy as np
 import torch
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -40,7 +39,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from .auth import CurrentUser, TokenResponse, get_current_user, login_for_access_token, require_admin
+from .auth import CurrentUser, TokenResponse, get_current_user, login_for_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +66,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
         response.headers["Cache-Control"] = "no-store"
         if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=63072000; includeSubDomains; preload"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
@@ -99,6 +96,7 @@ class PredictRequest(BaseModel):
     @classmethod
     def no_nan_or_inf(cls, v: List[float]) -> List[float]:
         import math
+
         for val in v:
             if math.isnan(val) or math.isinf(val):
                 raise ValueError("Feature vector must not contain NaN or Inf values")
@@ -170,9 +168,7 @@ def create_app(model_dir: str = "trained_models") -> FastAPI:
             model = IDSNet(n_features=len(NUMERIC_FEATURES), n_classes=n_classes)
 
             if (model_path / "best_model.pt").exists():
-                model.load_state_dict(
-                    torch.load(model_path / "best_model.pt", map_location="cpu")
-                )
+                model.load_state_dict(torch.load(model_path / "best_model.pt", map_location="cpu"))
                 logger.info("Model weights loaded")
             model.eval()
             state["model"] = model
@@ -183,6 +179,7 @@ def create_app(model_dir: str = "trained_models") -> FastAPI:
             bg_path = model_path.parent / "data" / "processed" / "synthetic_traffic.csv"
             if bg_path.exists():
                 import pandas as pd
+
                 df = pd.read_csv(bg_path)
                 X_bg = df[NUMERIC_FEATURES].values[:200].astype(np.float32)
                 X_bg_scaled = state["scaler"].transform(X_bg)
@@ -190,13 +187,12 @@ def create_app(model_dir: str = "trained_models") -> FastAPI:
 
             # Initialize explainability engine
             from ..explainability.explainer import ExplainabilityEngine
+
             state["explainer"] = ExplainabilityEngine(
                 model=state["model"],
                 feature_names=NUMERIC_FEATURES,
                 class_names=state["class_names"],
-                X_background=state.get(
-                    "background", np.zeros((10, len(NUMERIC_FEATURES)), dtype=np.float32)
-                ),
+                X_background=state.get("background", np.zeros((10, len(NUMERIC_FEATURES)), dtype=np.float32)),
             )
             logger.info("All artifacts loaded. API ready.")
         except Exception as e:
@@ -280,8 +276,7 @@ def create_app(model_dir: str = "trained_models") -> FastAPI:
             "attack_probability": round(attack_prob, 4),
             "predicted_class": pred_class,
             "class_probabilities": {
-                state["class_names"][i]: round(float(class_probs[i]), 4)
-                for i in range(len(state["class_names"]))
+                state["class_names"][i]: round(float(class_probs[i]), 4) for i in range(len(state["class_names"]))
             },
             "requested_by": _user.username,
         }

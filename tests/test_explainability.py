@@ -1,15 +1,19 @@
 """
 Tests: IntegratedGradientsExplainer, CounterfactualExplainer, ExplainabilityEngine
 """
-import numpy as np
-import torch
-import pytest
 
-from xai_ids.models.ids_model import IDSNet
+import numpy as np
+import pytest
+import torch
+
 from xai_ids.explainability.explainer import (
-    IntegratedGradientsExplainer, CounterfactualExplainer,
-    ExplainabilityEngine, FEATURE_DESCRIPTIONS, MITRE_MAPPING
+    FEATURE_DESCRIPTIONS,
+    MITRE_MAPPING,
+    CounterfactualExplainer,
+    ExplainabilityEngine,
+    IntegratedGradientsExplainer,
 )
+from xai_ids.models.ids_model import IDSNet
 from xai_ids.preprocessing.pipeline import NUMERIC_FEATURES
 
 N_FEATURES = len(NUMERIC_FEATURES)
@@ -120,13 +124,13 @@ class TestExplainabilityEngine:
         )
         X = np.random.rand(N_FEATURES).astype(np.float32)
         result = engine.explain_prediction(X, "DoS", 0.9)
-        for k in ["prediction", "is_attack", "confidence", "top_features",
-                  "mitre", "narrative", "counterfactual"]:
+        for k in ["prediction", "is_attack", "confidence", "top_features", "mitre", "narrative", "counterfactual"]:
             assert k in result
 
     def test_normal_prediction_no_counterfactual(self, model, background):
         engine = ExplainabilityEngine(
-            model=model, feature_names=NUMERIC_FEATURES,
+            model=model,
+            feature_names=NUMERIC_FEATURES,
             class_names=["NORMAL", "DoS"],
             X_background=background,
         )
@@ -137,7 +141,8 @@ class TestExplainabilityEngine:
 
     def test_narrative_contains_confidence(self, model, background):
         engine = ExplainabilityEngine(
-            model=model, feature_names=NUMERIC_FEATURES,
+            model=model,
+            feature_names=NUMERIC_FEATURES,
             class_names=["NORMAL", "DoS"],
             X_background=background,
         )

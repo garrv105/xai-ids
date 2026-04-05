@@ -35,9 +35,8 @@ Usage
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -67,12 +66,12 @@ CICIDS2017_LABEL_MAP: dict[str, str] = {
     "ssh-patator": "BruteForce",
     # Brute Force variants
     "brute force": "BruteForce",
-    "web attacks – brute force": "BruteForce",
     "web attacks \u2013 brute force": "BruteForce",
-    "web attacks – xss": "BruteForce",
     "web attacks \u2013 xss": "BruteForce",
-    "web attacks – sql injection": "BruteForce",
     "web attacks \u2013 sql injection": "BruteForce",
+    "web attacks - brute force": "BruteForce",
+    "web attacks - xss": "BruteForce",
+    "web attacks - sql injection": "BruteForce",
     # Infiltration & Exfil
     "infiltration": "DataExfil",
     "botnet": "DataExfil",
@@ -129,19 +128,49 @@ NSLKDD_LABEL_MAP: dict[str, str] = {
 
 # NSL-KDD feature column names (same order as in the .arff and .txt files)
 _NSL_KDD_COLUMNS = [
-    "duration", "protocol_type", "service", "flag",
-    "src_bytes", "dst_bytes", "land", "wrong_fragment", "urgent",
-    "hot", "num_failed_logins", "logged_in", "num_compromised",
-    "root_shell", "su_attempted", "num_root", "num_file_creations",
-    "num_shells", "num_access_files", "num_outbound_cmds",
-    "is_host_login", "is_guest_login", "count", "srv_count",
-    "serror_rate", "srv_serror_rate", "rerror_rate", "srv_rerror_rate",
-    "same_srv_rate", "diff_srv_rate", "srv_diff_host_rate",
-    "dst_host_count", "dst_host_srv_count", "dst_host_same_srv_rate",
-    "dst_host_diff_srv_rate", "dst_host_same_src_port_rate",
-    "dst_host_srv_diff_host_rate", "dst_host_serror_rate",
-    "dst_host_srv_serror_rate", "dst_host_rerror_rate",
-    "dst_host_srv_rerror_rate", "label", "difficulty",
+    "duration",
+    "protocol_type",
+    "service",
+    "flag",
+    "src_bytes",
+    "dst_bytes",
+    "land",
+    "wrong_fragment",
+    "urgent",
+    "hot",
+    "num_failed_logins",
+    "logged_in",
+    "num_compromised",
+    "root_shell",
+    "su_attempted",
+    "num_root",
+    "num_file_creations",
+    "num_shells",
+    "num_access_files",
+    "num_outbound_cmds",
+    "is_host_login",
+    "is_guest_login",
+    "count",
+    "srv_count",
+    "serror_rate",
+    "srv_serror_rate",
+    "rerror_rate",
+    "srv_rerror_rate",
+    "same_srv_rate",
+    "diff_srv_rate",
+    "srv_diff_host_rate",
+    "dst_host_count",
+    "dst_host_srv_count",
+    "dst_host_same_srv_rate",
+    "dst_host_diff_srv_rate",
+    "dst_host_same_src_port_rate",
+    "dst_host_srv_diff_host_rate",
+    "dst_host_serror_rate",
+    "dst_host_srv_serror_rate",
+    "dst_host_rerror_rate",
+    "dst_host_srv_rerror_rate",
+    "label",
+    "difficulty",
 ]
 
 # Mapping from NSL-KDD raw column names → NUMERIC_FEATURES
@@ -187,7 +216,7 @@ _CICIDS_FEATURE_MAP: dict[str, str] = {
     "syn flag count": "syn_count",
     "fin flag count": "fin_count",
     "rst flag count": "rst_count",
-    "destination port": "dst_bytes",   # used as proxy for port feature
+    "destination port": "dst_bytes",  # used as proxy for port feature
 }
 
 
@@ -254,9 +283,7 @@ def load_cicids2017(
         raise ValueError(f"Could not find label column. Available: {list(df_raw.columns)}")
 
     df_raw[label_col] = df_raw[label_col].astype(str).str.strip().str.lower()
-    df_raw[LABEL_COLUMN] = df_raw[label_col].map(
-        lambda x: CICIDS2017_LABEL_MAP.get(x, "DataExfil")
-    )
+    df_raw[LABEL_COLUMN] = df_raw[label_col].map(lambda x: CICIDS2017_LABEL_MAP.get(x, "DataExfil"))
     df_raw[BINARY_LABEL_COLUMN] = (df_raw[LABEL_COLUMN] != "NORMAL").astype(int)
 
     # --- Feature extraction ---
@@ -279,7 +306,9 @@ def load_cicids2017(
         out.replace([np.inf, -np.inf], np.nan, inplace=True)
         before = len(out)
         out.dropna(subset=NUMERIC_FEATURES, inplace=True)
-        logger.info("Dropped %d rows with Inf/NaN (%.1f%%)", before - len(out), 100 * (before - len(out)) / max(before, 1))
+        logger.info(
+            "Dropped %d rows with Inf/NaN (%.1f%%)", before - len(out), 100 * (before - len(out)) / max(before, 1)
+        )
 
     # Clip extreme values (99.9th percentile) to handle outlier flows
     for feat in NUMERIC_FEATURES:
@@ -357,17 +386,13 @@ def load_nslkdd(
     raw_labels = df_raw["label"].astype(str).str.strip().str.lower()
     # Strip trailing dot if present (some versions have "normal." etc.)
     raw_labels = raw_labels.str.rstrip(".")
-    df_raw[LABEL_COLUMN] = raw_labels.map(
-        lambda x: NSLKDD_LABEL_MAP.get(x, "DataExfil")
-    )
+    df_raw[LABEL_COLUMN] = raw_labels.map(lambda x: NSLKDD_LABEL_MAP.get(x, "DataExfil"))
     df_raw[BINARY_LABEL_COLUMN] = (df_raw[LABEL_COLUMN] != "NORMAL").astype(int)
 
     # --- Protocol type encoding ---
     proto_map = {"tcp": 0, "udp": 1, "icmp": 2}
     if "protocol_type" in df_raw.columns:
-        df_raw["protocol_type_enc"] = (
-            df_raw["protocol_type"].astype(str).str.lower().map(proto_map).fillna(0)
-        )
+        df_raw["protocol_type_enc"] = df_raw["protocol_type"].astype(str).str.lower().map(proto_map).fillna(0)
 
     # --- Feature extraction ---
     out = pd.DataFrame()
@@ -494,7 +519,10 @@ def autoload_dataset(path: Union[str, Path], **kwargs) -> pd.DataFrame:
         csv_files = list(path.glob("*.csv")) + list(path.glob("*.CSV"))
         if csv_files:
             first_name = csv_files[0].name.lower()
-            if any(kw in first_name for kw in ["cic", "ids", "traffic", "monday", "tuesday", "wednesday", "thursday", "friday"]):
+            if any(
+                kw in first_name
+                for kw in ["cic", "ids", "traffic", "monday", "tuesday", "wednesday", "thursday", "friday"]
+            ):
                 logger.info("Auto-detected: CICIDS2017 directory")
                 return load_cicids2017(path, **kwargs)
         # Fallback: try CICIDS loader regardless
@@ -528,8 +556,7 @@ def autoload_dataset(path: Union[str, Path], **kwargs) -> pd.DataFrame:
             pass
 
     raise ValueError(
-        f"Cannot auto-detect dataset format for: {path}\n"
-        "Use load_cicids2017() or load_nslkdd() directly."
+        f"Cannot auto-detect dataset format for: {path}\n" "Use load_cicids2017() or load_nslkdd() directly."
     )
 
 
@@ -563,6 +590,7 @@ def load_real_dataset_for_training(
 
     # Save to temp CSV for DataPipeline compatibility
     import tempfile
+
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
         tmp_path = tmp.name
     df.to_csv(tmp_path, index=False)
@@ -576,5 +604,6 @@ def load_real_dataset_for_training(
     )
 
     import os
+
     os.unlink(tmp_path)
     return data

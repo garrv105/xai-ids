@@ -1,13 +1,13 @@
 """
 Tests: IDSNet architecture, IDSTrainer, PGDAttack, make_data_loaders
 """
+
 import numpy as np
-import torch
 import pytest
+import torch
 
 from xai_ids.models.ids_model import IDSNet, IDSTrainer, PGDAttack, make_data_loaders
-from xai_ids.preprocessing.pipeline import DataPipeline, NUMERIC_FEATURES
-
+from xai_ids.preprocessing.pipeline import NUMERIC_FEATURES, DataPipeline
 
 N_FEATURES = len(NUMERIC_FEATURES)
 N_CLASSES = 6
@@ -62,8 +62,7 @@ class TestIDSNet:
         binary_logit, multi_logit, _ = model(x)
         loss = binary_logit.sum() + multi_logit.sum()
         loss.backward()
-        grad_norms = [p.grad.norm().item() for p in model.parameters()
-                      if p.grad is not None]
+        grad_norms = [p.grad.norm().item() for p in model.parameters() if p.grad is not None]
         assert len(grad_norms) > 0
         assert all(not np.isnan(g) for g in grad_norms)
 
@@ -149,9 +148,7 @@ class TestIDSTrainer:
     def test_training_reduces_loss(self, small_data):
         model = IDSNet(n_features=N_FEATURES, n_classes=N_CLASSES, hidden_dim=64)
         trainer = IDSTrainer(
-            model=model, device="cpu", lr=1e-3,
-            adversarial_training=False,
-            save_dir="/tmp/xai_ids_test_models"
+            model=model, device="cpu", lr=1e-3, adversarial_training=False, save_dir="/tmp/xai_ids_test_models"
         )
         train, val, _ = make_data_loaders(small_data, batch_size=64)
         history = trainer.train(train, val, epochs=3, patience=10)
@@ -162,9 +159,9 @@ class TestIDSTrainer:
 
     def test_history_keys(self, small_data):
         model = IDSNet(n_features=N_FEATURES, n_classes=N_CLASSES, hidden_dim=32)
-        trainer = IDSTrainer(model=model, device="cpu",
-                             adversarial_training=False,
-                             save_dir="/tmp/xai_ids_test_models2")
+        trainer = IDSTrainer(
+            model=model, device="cpu", adversarial_training=False, save_dir="/tmp/xai_ids_test_models2"
+        )
         train, val, _ = make_data_loaders(small_data, batch_size=64)
         history = trainer.train(train, val, epochs=2, patience=10)
         for k in ["train_loss", "val_loss", "val_acc", "val_auc"]:

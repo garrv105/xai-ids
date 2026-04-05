@@ -112,15 +112,17 @@ class IntegratedGradientsExplainer:
         for i in range(len(attributions)):
             attrs = attributions[i]
             ranked = np.argsort(np.abs(attrs))[::-1][:top_k]
-            results.append([
-                {
-                    "feature": feature_names[j],
-                    "attribution": float(attrs[j]),
-                    "direction": "increases_risk" if attrs[j] > 0 else "decreases_risk",
-                    "description": FEATURE_DESCRIPTIONS.get(feature_names[j], feature_names[j]),
-                }
-                for j in ranked
-            ])
+            results.append(
+                [
+                    {
+                        "feature": feature_names[j],
+                        "attribution": float(attrs[j]),
+                        "direction": "increases_risk" if attrs[j] > 0 else "decreases_risk",
+                        "description": FEATURE_DESCRIPTIONS.get(feature_names[j], feature_names[j]),
+                    }
+                    for j in ranked
+                ]
+            )
         return results
 
 
@@ -138,6 +140,7 @@ class SHAPExplainer:
 
         try:
             import shap
+
             # Use a callable wrapper for PyTorch model
             def model_fn(X):
                 with torch.no_grad():
@@ -155,7 +158,6 @@ class SHAPExplainer:
         """Returns SHAP values (N, F) or None if shap unavailable."""
         if not self._shap_available:
             return None
-        import shap
         return self._explainer.shap_values(X, nsamples=n_samples)
 
     def global_importance(self, X: np.ndarray) -> List[Dict]:
@@ -190,7 +192,7 @@ class CounterfactualExplainer:
     def generate(
         self,
         X: np.ndarray,
-        target_class: int = 0,    # 0 = normal
+        target_class: int = 0,  # 0 = normal
         max_iter: int = 200,
         lr: float = 0.01,
         lambda_dist: float = 1.0,
@@ -268,12 +270,14 @@ class ExplainabilityEngine:
             for i, (orig, new) in enumerate(zip(X, cf)):
                 delta = new - orig
                 if abs(delta) > 0.01:
-                    changed_features.append({
-                        "feature": self.feature_names[i],
-                        "original": float(orig),
-                        "counterfactual": float(new),
-                        "change": float(delta),
-                    })
+                    changed_features.append(
+                        {
+                            "feature": self.feature_names[i],
+                            "original": float(orig),
+                            "counterfactual": float(new),
+                            "change": float(delta),
+                        }
+                    )
             cf_explanation = {
                 "distance": round(cf_dist, 4),
                 "changed_features": sorted(changed_features, key=lambda x: abs(x["change"]), reverse=True)[:5],

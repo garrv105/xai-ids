@@ -12,12 +12,12 @@ Handles:
 import logging
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -267,14 +267,22 @@ class DataPipeline:
 
         logger.info(
             "Split: train=%d val=%d test=%d | classes=%s",
-            len(X_train), len(X_val), len(X_test),
+            len(X_train),
+            len(X_val),
+            len(X_test),
             list(self.label_encoder.classes_),
         )
 
         return {
-            "X_train": X_train, "X_val": X_val, "X_test": X_test,
-            "y_train": y_train, "y_val": y_val, "y_test": y_test,
-            "y_multi_train": ym_train, "y_multi_val": ym_val, "y_multi_test": ym_test,
+            "X_train": X_train,
+            "X_val": X_val,
+            "X_test": X_test,
+            "y_train": y_train,
+            "y_val": y_val,
+            "y_test": y_test,
+            "y_multi_train": ym_train,
+            "y_multi_val": ym_val,
+            "y_multi_test": ym_test,
             "feature_names": NUMERIC_FEATURES,
             "class_names": list(self.label_encoder.classes_),
             "n_features": len(NUMERIC_FEATURES),

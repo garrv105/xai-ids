@@ -1,15 +1,20 @@
 """
 Tests: DataPipeline, SyntheticDataGenerator
 """
-import tempfile
+
 import os
+import tempfile
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from xai_ids.preprocessing.pipeline import (
-    DataPipeline, SyntheticDataGenerator, NUMERIC_FEATURES,
-    LABEL_COLUMN, BINARY_LABEL_COLUMN
+    BINARY_LABEL_COLUMN,
+    LABEL_COLUMN,
+    NUMERIC_FEATURES,
+    DataPipeline,
+    SyntheticDataGenerator,
 )
 
 
@@ -47,8 +52,7 @@ class TestSyntheticDataGenerator:
     def test_reproducible_with_seed(self):
         df1 = self.gen.generate(n_per_class=50, seed=42)
         df2 = self.gen.generate(n_per_class=50, seed=42)
-        pd.testing.assert_frame_equal(df1.reset_index(drop=True),
-                                       df2.reset_index(drop=True))
+        pd.testing.assert_frame_equal(df1.reset_index(drop=True), df2.reset_index(drop=True))
 
     def test_different_seeds_differ(self):
         df1 = self.gen.generate(n_per_class=50, seed=1)
@@ -80,9 +84,18 @@ class TestDataPipeline:
 
     def test_load_and_prepare_returns_correct_keys(self):
         data = self.pipeline.load_and_prepare(n_per_class=100)
-        required_keys = ["X_train", "X_val", "X_test",
-                         "y_train", "y_val", "y_test",
-                         "feature_names", "class_names", "n_features", "n_classes"]
+        required_keys = [
+            "X_train",
+            "X_val",
+            "X_test",
+            "y_train",
+            "y_val",
+            "y_test",
+            "feature_names",
+            "class_names",
+            "n_features",
+            "n_classes",
+        ]
         for k in required_keys:
             assert k in data, f"Missing key: {k}"
 
@@ -119,7 +132,7 @@ class TestDataPipeline:
             assert unique.issubset({0, 1}), f"{split} has non-binary values: {unique}"
 
     def test_transform_with_fitted_scaler(self):
-        data = self.pipeline.load_and_prepare(n_per_class=100)
+        self.pipeline.load_and_prepare(n_per_class=100)
         X_new = np.random.rand(5, len(NUMERIC_FEATURES)).astype(np.float32)
         transformed = self.pipeline.transform(X_new)
         assert transformed.shape == (5, len(NUMERIC_FEATURES))

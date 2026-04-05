@@ -36,8 +36,8 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from xai_ids.preprocessing.pipeline import DataPipeline
 from xai_ids.models.ids_model import IDSNet, IDSTrainer, make_data_loaders
+from xai_ids.preprocessing.pipeline import DataPipeline
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,7 +47,7 @@ logger = logging.getLogger("xai_ids.train")
 
 
 def evaluate(model, test_loader, class_names, device):
-    from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
+    from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
 
     model.eval()
     all_probs, all_labels, all_multi_preds, all_multi_true = [], [], [], []

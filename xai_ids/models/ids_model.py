@@ -6,7 +6,7 @@ Dual-head neural network architecture:
   - Multi-class head: attack type classification
 
 Architecture:
-  Input → BatchNorm → FC(256) → GELU → Dropout → 
+  Input → BatchNorm → FC(256) → GELU → Dropout →
           ResBlock(256) → ResBlock(128) →
           Shared Representation →
           ┌── Binary head: FC(64) → sigmoid
@@ -21,11 +21,9 @@ Supports:
 """
 
 import logging
-import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -40,8 +38,10 @@ logger = logging.getLogger(__name__)
 # Model architecture
 # ---------------------------------------------------------------------------
 
+
 class ResidualBlock(nn.Module):
     """Residual block with pre-activation (He et al.)."""
+
     def __init__(self, dim: int, dropout: float = 0.3):
         super().__init__()
         self.block = nn.Sequential(
@@ -179,6 +179,7 @@ class IDSNet(nn.Module):
 # Adversarial training utilities
 # ---------------------------------------------------------------------------
 
+
 class PGDAttack:
     """
     Projected Gradient Descent (Madry et al.) for adversarial robustness training.
@@ -212,6 +213,7 @@ class PGDAttack:
 # ---------------------------------------------------------------------------
 # Trainer
 # ---------------------------------------------------------------------------
+
 
 class IDSTrainer:
     """Full training pipeline with early stopping, mixed-loss, and adversarial hardening."""
@@ -263,7 +265,12 @@ class IDSTrainer:
 
             logger.info(
                 "Epoch %3d/%d | train_loss=%.4f | val_loss=%.4f | val_acc=%.4f | val_auc=%.4f",
-                epoch, epochs, train_loss, val_metrics["loss"], val_metrics["accuracy"], val_metrics["auc"],
+                epoch,
+                epochs,
+                train_loss,
+                val_metrics["loss"],
+                val_metrics["accuracy"],
+                val_metrics["auc"],
             )
 
             # Early stopping
@@ -310,7 +317,7 @@ class IDSTrainer:
         return total_loss / len(loader)
 
     def _validate(self, loader: DataLoader) -> Dict[str, float]:
-        from sklearn.metrics import roc_auc_score, accuracy_score
+        from sklearn.metrics import accuracy_score, roc_auc_score
 
         self.model.eval()
         total_loss, all_probs, all_labels, all_preds = 0.0, [], [], []
@@ -319,8 +326,9 @@ class IDSTrainer:
             for X, y_bin, y_multi in loader:
                 X, y_bin, y_multi = X.to(self.device), y_bin.to(self.device), y_multi.to(self.device)
                 binary_logit, multi_logit, _ = self.model(X)
-                loss = 0.6 * self.binary_criterion(binary_logit, y_bin.float()) + \
-                       0.4 * self.multi_criterion(multi_logit, y_multi)
+                loss = 0.6 * self.binary_criterion(binary_logit, y_bin.float()) + 0.4 * self.multi_criterion(
+                    multi_logit, y_multi
+                )
                 total_loss += loss.item()
                 probs = torch.sigmoid(binary_logit).cpu().numpy()
                 all_probs.extend(probs)
