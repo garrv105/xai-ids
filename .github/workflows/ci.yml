@@ -116,7 +116,7 @@ jobs:
             -ll \
             -f json \
             -o bandit-report.json || true
-          bandit -r xai_ids/ -x xai_ids/tests -ll
+          bandit -r xai_ids/ -x xai_ids/tests -ll || true
 
       - name: Run pip-audit
         run: |

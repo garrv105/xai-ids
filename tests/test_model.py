@@ -50,7 +50,8 @@ class TestIDSNet:
     def test_embedding_dimension(self, model):
         x = torch.randn(4, N_FEATURES)
         _, _, emb = model(x)
-        assert emb.shape == (4, 128)  # hidden_dim // 2 = 64//2... actually 64//2=32... check
+        # fixture uses hidden_dim=64, embedding dim = hidden_dim // 2 = 32
+        assert emb.shape == (4, 32)
 
     def test_parameter_count_positive(self, model):
         total = sum(p.numel() for p in model.parameters())
